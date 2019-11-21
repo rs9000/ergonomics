@@ -124,6 +124,10 @@ class RebaScore:
         # type: (RebaScore) -> (np.ndarray, np.ndarray)
         '''
         Compute score A
+        >>> rebascore = RebaScore()
+        >>> rebascore.set_body(np.array([10, 0, 20, 0, 1, 50, 0]))
+        >>> rebascore.compute_score_a()
+        (4, array([1, 2, 3]))
 
         :return: Score A, [neck_score, trunk_score, leg_score]
         '''
@@ -172,6 +176,10 @@ class RebaScore:
         # type: (RebaScore) -> (np.ndarray, np.ndarray)
         '''
         Compute score B
+        >>> rebascore = RebaScore()
+        >>> rebascore.set_arms(np.array([45, 0, 0, 0, 70, 0, 1]))
+        >>> rebascore.compute_score_b()
+        (2, array([2, 1, 2]))
 
         :return: scoreB, [upper_arm_score, lower_arm_score, wrist_score]
         '''
@@ -276,6 +284,8 @@ class RebaScore:
 
         if verbose:
             utils.show_skeleton(pose, title="GT pose")
+            _pose, _ = utils.rotate_pose(np.copy(pose), rotation_joint=8)
+            utils.show_skeleton(_pose, title="GT pose left")
 
         # Neck position
         pose, _ = utils.rotate_pose(pose, rotation_joint=8)
@@ -320,8 +330,8 @@ class RebaScore:
             title = "Leg angle: " + str(round(legs_angle, 2)) + " Step size: " + str(round(step_size, 2))
             utils.show_skeleton(pose, title=title)
 
-        return np.ndarray([neck_angle, neck_side, trunk_angle, trunk_side,
-                legs_walking, legs_angle, load])
+        return np.array([neck_angle, neck_side, trunk_angle, trunk_side,
+                           legs_walking, legs_angle, load])
 
 
     @staticmethod
@@ -343,6 +353,9 @@ class RebaScore:
 
         if verbose:
             utils.show_skeleton(pose, title="GT pose")
+            _pose, _ = utils.rotate_pose(np.copy(pose), rotation_joint=8)
+            _pose, _ = utils.rotate_pose(_pose, rotation_joint=8, m_coeff=np.pi)
+            utils.show_skeleton(_pose, title="GT pose Right")
 
         # Neck position
         pose, _ = utils.rotate_pose(pose, rotation_joint=8)
@@ -536,10 +549,10 @@ class RebaScore:
 if __name__ == '__main__':
     rebaScore = RebaScore()
 
-    rebaScore.set_body(np.array([10, False, False, 20, False, False, True, 50, 0]))
+    rebaScore.set_body(np.array([10, 0, 20, 0, 1, 50, 0]))
     score_a, partial_a = rebaScore.compute_score_a()
 
-    rebaScore.set_arms(np.array([45, False, False, False, 70, 0, True]))
+    rebaScore.set_arms(np.array([45, 0, 0, 0, 70, 0, 1]))
     score_b, partial_b = rebaScore.compute_score_b()
 
     score_c, caption = rebaScore.compute_score_c(score_a, score_b)
