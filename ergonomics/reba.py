@@ -2,7 +2,7 @@
 # ---------------------
 
 import numpy as np
-import utils
+import ergonomics.utils as utils
 
 
 class RebaScore:
