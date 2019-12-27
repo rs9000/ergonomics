@@ -20,7 +20,7 @@ pip install ergonomics-metrics
 
 ### Example
 
-```
+```python
 from ergonomics.reba import RebaScore
 import requests
 import numpy as np
