@@ -1,15 +1,7 @@
 # Ergonomics
 Ergonomics metrics: REBA score
 
-<table class="tg">
-
-  <tr>
-    <th class="tg-baqh"><img src="./Resources/pose.png"></th>
-    <th class="tg-baqh"><img src="./Resources/pose_left.png"></th>
-    <th class="tg-baqh"><img src="./Resources/pose_right.png"></th>
-  </tr>
-  
-</table>
+<img src="./Resources/pose.gif" width="600"></th>
 
 
 ### Installation
