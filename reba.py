@@ -2,7 +2,7 @@
 # ---------------------
 
 import numpy as np
-import utils
+import ergonomics.utils as utils
 
 
 class RebaScore:
@@ -277,6 +277,7 @@ class RebaScore:
         :return: Body params (neck_angle, neck_side, trunk_angle, trunk_side,
                 legs_walking, legs_angle, load)
         '''
+
         pose = np.expand_dims(np.copy(pose), 0)
 
         neck_angle, neck_side, trunk_angle, trunk_side, \
@@ -287,42 +288,58 @@ class RebaScore:
             _pose, _ = utils.rotate_pose(np.copy(pose), rotation_joint=8)
             utils.show_skeleton(_pose, title="GT pose left")
 
-        # Neck position
-        pose, _ = utils.rotate_pose(pose, rotation_joint=8)
-        pose -= pose[:, 1]
-        neck_angle = np.rad2deg(np.arctan2(pose[0, 0, 1], pose[0, 0, 0]) - (np.pi / 2))
-
-        if verbose:
-            utils.show_skeleton(pose, title="Neck angle: "+ str(round(neck_angle, 2)))
-
-        # Neck bending
-        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=np.pi/2)
-        neck_side_angle = abs(np.rad2deg(np.arctan2(pose[0, 0, 1], pose[0, 0, 0]) - (np.pi / 2)))
-        neck_side = 1 if neck_side_angle > 20 else 0
-
-        if verbose:
-            utils.show_skeleton(pose, title="Neck side angle: " + str(round(neck_side_angle, 2)))
-
         # Trunk position
-        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=-np.pi/2)
+        pose, _ = utils.rotate_pose(pose, rotation_joint=8)
         pose -= (pose[:, 8] + pose[:, 11]) /2
-        trunk_angle = np.rad2deg(np.arctan2(pose[0, 1, 1], pose[0, 1, 0]) - (np.pi / 2))
+
+        if quad(pose[0, 1]) < 3:
+            trunk_angle = np.rad2deg(np.arctan2(pose[0, 1, 1], pose[0, 1, 0]) - (np.pi / 2))
+        else:
+            trunk_angle = 270 + np.rad2deg(np.arctan2(pose[0, 1, 1], pose[0, 1, 0]))
 
         if verbose:
             utils.show_skeleton(pose, title="Trunk angle: " + str(round(trunk_angle, 2)))
 
         # Trunk bending
         pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=np.pi/2)
-        trunk_side_angle = abs(np.rad2deg(np.arctan2(pose[0, 1, 1], pose[0, 1, 0]) - (np.pi / 2)))
+
+        angle = np.pi /2 if quad(pose[0, 1]) > 2 else -np.pi/2
+        trunk_side_angle = abs(np.rad2deg(np.arctan2(pose[0, 1, 1], pose[0, 1, 0]) + angle))
         trunk_side = 1 if trunk_side_angle > 30 else 0
 
         if verbose:
             utils.show_skeleton(pose, title="Trunk side angle: " + str(round(trunk_side_angle, 2)))
 
+        # Neck position
+        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=-np.pi/2)
+        pose -= pose[:, 1]
+
+        if quad(pose[0, 0]) < 3:
+            neck_angle = np.rad2deg(np.arctan2(pose[0, 0, 1], pose[0, 0, 0]) - (np.pi / 2)) - trunk_angle
+        else:
+            neck_angle = 270 + np.rad2deg(np.arctan2(pose[0, 0, 1], pose[0, 0, 0])) - trunk_angle
+
+        if verbose:
+            utils.show_skeleton(pose, title="Neck angle: " + str(round(neck_angle, 2)))
+
+        # Neck bending
+        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=np.pi / 2)
+        angle = np.pi /2 if quad(pose[0, 0]) > 2 else -np.pi/2
+        neck_side_angle = abs(np.rad2deg(np.arctan2(pose[0, 0, 1], pose[0, 0, 0]) + angle)) - trunk_side_angle
+        neck_side = 1 if neck_side_angle > 20 else 0
+
+        if verbose:
+            utils.show_skeleton(pose, title="Neck side angle: " + str(round(neck_side_angle, 2)))
+
         # Legs position
         pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=-np.pi / 2)
         pose -= pose[:, 8]
-        legs_angle = -np.rad2deg(np.arctan2(pose[0, 9, 1], pose[0, 9, 0]) + (np.pi/2))
+
+        if quad(pose[0, 9]) > 2:
+            legs_angle = -np.rad2deg(np.arctan2(pose[0, 9, 1], pose[0, 9, 0]) + (np.pi/2))
+        else:
+            legs_angle = 270 - np.rad2deg(np.arctan2(pose[0, 9, 1], pose[0, 9, 0]))
+
         step_size = abs(np.linalg.norm(pose[0, 10, :2] - pose[0, 13, :2]))
         legs_walking = 1 if step_size > 0.1 else 0
 
@@ -357,27 +374,12 @@ class RebaScore:
             _pose, _ = utils.rotate_pose(_pose, rotation_joint=8, m_coeff=np.pi)
             utils.show_skeleton(_pose, title="GT pose Right")
 
-        # Neck position
         pose, _ = utils.rotate_pose(pose, rotation_joint=8)
-        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=np.pi)
-        pose -= pose[:, 1]
-        neck_angle = np.rad2deg((np.pi / 2) - np.arctan2(pose[0, 0, 1], pose[0, 0, 0]))
-
-        if verbose:
-            utils.show_skeleton(pose, title="Neck angle: " + str(round(neck_angle, 2)))
-
-        # Neck bending
-        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=np.pi / 2)
-        neck_side_angle = abs(np.rad2deg(np.arctan2(pose[0, 0, 1], pose[0, 0, 0]) - (np.pi / 2)))
-        neck_side = 1 if neck_side_angle > 20 else 0
-
-        if verbose:
-            utils.show_skeleton(pose, title="Neck side angle: " + str(round(neck_side_angle, 2)))
 
         # Trunk position
-        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=-np.pi / 2)
+        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=np.pi)
         pose -= (pose[:, 8] + pose[:, 11]) / 2
-        trunk_angle = np.rad2deg((np.pi / 2) - np.arctan2(pose[0, 1, 1], pose[0, 1, 0]))
+        trunk_angle = np.rad2deg((np.pi / 2)  - np.arctan2(pose[0, 1, 1], pose[0, 1, 0]))
 
         if verbose:
             utils.show_skeleton(pose, title="Trunk angle: " + str(round(trunk_angle, 2)))
@@ -389,6 +391,22 @@ class RebaScore:
 
         if verbose:
             utils.show_skeleton(pose, title="Trunk side angle: " + str(round(trunk_side_angle, 2)))
+
+        # Neck position
+        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=-np.pi / 2)
+        pose -= pose[:, 1]
+        neck_angle = np.rad2deg((np.pi / 2) - np.arctan2(pose[0, 0, 1], pose[0, 0, 0])) - trunk_angle
+
+        if verbose:
+            utils.show_skeleton(pose, title="Neck angle: " + str(round(neck_angle, 2)))
+
+        # Neck bending
+        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=np.pi / 2)
+        neck_side_angle = np.abs(np.rad2deg(np.abs(np.arctan2(pose[0, 0, 1], pose[0, 0, 0])) - (np.pi / 2)))
+        neck_side = 1 if neck_side_angle > 20 else 0
+
+        if verbose:
+            utils.show_skeleton(pose, title="Neck side angle: " + str(round(neck_side_angle, 2)))
 
         # Legs position
         pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=-np.pi / 2)
@@ -420,10 +438,31 @@ class RebaScore:
         if verbose:
             utils.show_skeleton(pose, title="GT pose")
 
+        # Leaning
+        pose, _ = utils.rotate_pose(pose, rotation_joint=8)
+        pose -= (pose[:, 8] + pose[:, 11]) / 2
+
+        if quad(pose[0, 1]) < 3:
+            trunk_angle = np.rad2deg(np.arctan2(pose[0, 1, 1], pose[0, 1, 0]) - (np.pi / 2))
+        else:
+            trunk_angle = 270 + np.rad2deg(np.arctan2(pose[0, 1, 1], pose[0, 1, 0]))
+
+        leaning = 1 if trunk_angle > 30 else 0
+
+        if verbose:
+            utils.show_skeleton(pose, title="Leaning angle: " + str(round(trunk_angle, 2)))
+
         # Upper Arm position
         pose, _ = utils.rotate_pose(pose, rotation_joint=8)
         pose -= pose[:, 2]
-        upper_arm_angle = -np.rad2deg(np.arctan2(pose[0, 3, 1], pose[0, 3, 0]) + (np.pi / 2))
+
+        if quad(pose[0, 3]) > 2:
+            upper_arm_angle = -np.rad2deg(np.arctan2(pose[0, 3, 1], pose[0, 3, 0]) + (np.pi / 2))
+        else:
+            upper_arm_angle = 270 - np.rad2deg(np.arctan2(pose[0, 3, 1], pose[0, 3, 0]))
+
+
+        upper_arm_angle += trunk_angle
 
         if verbose:
             utils.show_skeleton(pose, title="Upper Arms angle: " + str(round(upper_arm_angle, 2)))
@@ -431,26 +470,29 @@ class RebaScore:
         # Upper Arm Adjust
         pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=np.pi/2)
         shoulder_step = pose[:, 2, 1] - pose[:, 1, 1]
-        arm_abducted_angle = np.rad2deg(np.arctan2(pose[0, 3, 1], pose[0, 3, 0]) + (np.pi / 2))
+
+        if quad(pose[0, 3]) > 2:
+            arm_abducted_angle = -np.rad2deg(np.arctan2(pose[0, 3, 1], pose[0, 3, 0]) + (np.pi / 2))
+        else:
+            arm_abducted_angle = 270 - np.rad2deg(np.arctan2(pose[0, 3, 1], pose[0, 3, 0]))
+
         shoulder_raised = 1 if shoulder_step > 0.02 else 0
-        arm_abducted = 1 if abs(arm_abducted_angle) > 45 else 0
+        arm_abducted = 1 if arm_abducted_angle > 45 else 0
 
         if verbose:
             print(shoulder_raised)
             utils.show_skeleton(pose, title="Upper Arms abducted: " + str(round(arm_abducted_angle, 2)))
 
-        # Leaning
-        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=-np.pi / 2)
-        pose -= (pose[:, 8] + pose[:, 11]) / 2
-        trunk_angle = np.rad2deg(np.arctan2(pose[0, 1, 1], pose[0, 1, 0]) - (np.pi / 2))
-        leaning = 1 if trunk_angle > 30 else 0
-
-        if verbose:
-            utils.show_skeleton(pose, title="Leaning angle: " + str(round(trunk_angle, 2)))
-
         # Lower Arm position
+        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=-np.pi/2)
         pose -= pose[:, 3]
-        lower_arm_angle = -np.rad2deg(np.arctan2(pose[0, 4, 1], pose[0, 4, 0]) + (np.pi / 2))
+
+        if quad(pose[0, 4]) > 2:
+            lower_arm_angle = -np.rad2deg(np.arctan2(pose[0, 4, 1], pose[0, 4, 0]) + (np.pi / 2))
+        else:
+            lower_arm_angle = 270 - np.rad2deg(np.arctan2(pose[0, 4, 1], pose[0, 4, 0]))
+
+        lower_arm_angle = lower_arm_angle + trunk_angle - upper_arm_angle
 
         if verbose:
             utils.show_skeleton(pose, title="Lower Arms angle: " + str(round(lower_arm_angle, 2)))
@@ -490,28 +532,10 @@ class RebaScore:
         if verbose:
             utils.show_skeleton(pose, title="GT pose")
 
-        # Upper Arm position
         pose, _ = utils.rotate_pose(pose, rotation_joint=8)
         pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=np.pi)
-        pose -= pose[:, 5]
-        upper_arm_angle = np.rad2deg(np.arctan2(pose[0, 6, 1], pose[0, 6, 0]) + (np.pi / 2))
-
-        if verbose:
-            utils.show_skeleton(pose, title="Upper Arms angle: " + str(round(upper_arm_angle, 2)))
-
-        # Upper Arm Adjust
-        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=np.pi / 2)
-        shoulder_step = pose[:, 5, 1] - pose[:, 1, 1]
-        arm_abducted_angle = np.rad2deg((np.pi / 2) + np.arctan2(pose[0, 6, 1], pose[0, 6, 0]))
-        shoulder_raised = 1 if shoulder_step > 0.02 else 0
-        arm_abducted = 1 if abs(arm_abducted_angle) > 45 else 0
-
-        if verbose:
-            print(shoulder_raised)
-            utils.show_skeleton(pose, title="Upper Arms abducted: " + str(round(arm_abducted_angle, 2)))
 
         # Leaning
-        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=-np.pi / 2)
         pose -= (pose[:, 8] + pose[:, 11]) / 2
         trunk_angle = np.rad2deg((np.pi / 2) - np.arctan2(pose[0, 1, 1], pose[0, 1, 0]))
         leaning = 1 if trunk_angle > 60 else 0
@@ -519,9 +543,31 @@ class RebaScore:
         if verbose:
             utils.show_skeleton(pose, title="Leaning angle: " + str(round(trunk_angle, 2)))
 
+        # Upper Arm position
+        pose -= pose[:, 5]
+        if quad(pose[0, 6]) == 2:
+            upper_arm_angle = -(270 - np.rad2deg(np.arctan2(pose[0, 6, 1], pose[0, 6, 0])) - trunk_angle)
+        else:
+            upper_arm_angle = np.rad2deg((np.pi /2) + np.arctan2(pose[0, 6, 1], pose[0, 6, 0])) + trunk_angle
+
+        if verbose:
+            utils.show_skeleton(pose, title="Upper Arms angle: " + str(round(upper_arm_angle, 2)))
+
+        # Upper Arm Adjust
+        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=np.pi / 2)
+        shoulder_step = pose[:, 5, 1] - pose[:, 1, 1]
+        arm_abducted_angle = abs(np.rad2deg((np.pi / 2) + np.arctan2(pose[0, 6, 1], pose[0, 6, 0])))
+        shoulder_raised = 1 if shoulder_step > 0.02 else 0
+        arm_abducted = 1 if arm_abducted_angle > 45 else 0
+
+        if verbose:
+            print(shoulder_raised)
+            utils.show_skeleton(pose, title="Upper Arms abducted: " + str(round(arm_abducted_angle, 2)))
+
         # Lower Arm position
+        pose, _ = utils.rotate_pose(pose, rotation_joint=8, m_coeff=-np.pi / 2)
         pose -= pose[:, 6]
-        lower_arm_angle = np.rad2deg((np.pi / 2) + np.arctan2(pose[0, 7, 1], pose[0, 7, 0]) )
+        lower_arm_angle = np.rad2deg((np.pi / 2) + np.arctan2(pose[0, 7, 1], pose[0, 7, 0]) ) + trunk_angle - upper_arm_angle
 
         if verbose:
             utils.show_skeleton(pose, title="Lower Arms angle: " + str(round(lower_arm_angle, 2)))
@@ -545,6 +591,17 @@ class RebaScore:
         return np.array([upper_arm_angle, shoulder_raised, arm_abducted, leaning,
                          lower_arm_angle, wrist_angle, wrist_twisted])
 
+def quad(coord):
+    q = 0
+    if coord[0] >= 0 and coord[1] >= 0:
+        q = 1
+    elif coord[0] <= 0 and coord[1] >= 0:
+        q = 2
+    elif coord[0] <= 0 and coord[1] <= 0:
+        q = 3
+    elif coord[0] >= 0 and coord[1] <= 0:
+        q = 4
+    return q
 
 if __name__ == '__main__':
 
