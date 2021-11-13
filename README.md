@@ -41,7 +41,23 @@ print("Score C: ", score_c, caption)
 
 ```
 
-### Test
+
+### Input pose
+
+The input pose is a 13+2 joints representing X,Y,Z coordinates relative to the root joint.
+```
+[0] = Head
+[1] = Nose
+[2, 3, 4, 14]: Left Shoulder, Elbow, Wrist + Hand (optional)
+[5, 6, 7, 15]: Right Shoulder, Elbow, Wrist + Hand (optional)
+[8, 9, 10]: Left Hip, Knee, Ankle
+[11, 12, 13]: Right Hip, Knee, Ankle
+```
+The root joint has coordinates (0,0,0) and can be arbitrarily chosen from the 15 joints in the pose. 
+During the calculation of the REBA score the root joint will be automatically set to the point of coordinates: (Lhip + Rhip)/2.
+
+
+### Output
 
 
 ```
